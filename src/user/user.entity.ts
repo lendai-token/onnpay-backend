@@ -137,6 +137,18 @@ export class User {
   @Column({ type: 'numeric', nullable: true, default: 0 })
   other: number;
 
+  @ApiProperty({ description: 'Access Code', maximum: 255 })
+  @Column({ type: 'varchar', nullable: true, length: 255 })
+  accessCode: string;
+
+  @ApiProperty({ description: 'Merchant Identifier', maximum: 255 })
+  @Column({ type: 'varchar', nullable: true, length: 255 })
+  merchantId: string;
+
+  @ApiProperty({ description: 'SHA Request', maximum: 255 })
+  @Column({ type: 'varchar', nullable: true, length: 255 })
+  shaRequest: string;
+
   @ApiProperty({ description: 'Is Delete' })
   @Column({ type: 'boolean', nullable: false, default: false })
   isDelete: boolean;

@@ -175,7 +175,7 @@ export class PaymentService {
         request_expiry_date: body.expiryDate,
         payment_link_id: body.invoiceNo,
         notification_type: body.notification,
-        return_url: body.returnUrl,
+        return_url: process.env.PF_REDIRECT_URL,
       };
 
       const signature = await this.generateSignature(data, secretKey);
