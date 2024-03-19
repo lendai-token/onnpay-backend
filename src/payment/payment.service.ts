@@ -7,6 +7,7 @@ import { Payment } from './payment.entity';
 import { PaymentRepository } from './payment.repository';
 import { UserRepository } from '../user/user.repository';
 import { SettlementRepository } from '../settlement/settlement.repository';
+import { UserService } from '@src/user/user.service';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly userRepository: UserRepository,
     private readonly settlementRepository: SettlementRepository,
+    private readonly userService: UserService,
   ) {}
 
   private readonly logger = new Logger(PaymentService.name);
@@ -28,11 +30,15 @@ export class PaymentService {
 
   async findAll(): Promise<Payment[]> {
     this.logger.log(`Retrieve all Payment`);
+    const merchantIdentifier = process.env.PF_MERCHANT_IDENTIFIER;
+    const accessCode = process.env.PF_ACCESS_CODE;
+    const secretKey = process.env.PF_SHA_REQUEST_PHRASE;
+
     const paymentList = await this.paymentRepository.findAll();
 
     await Promise.all(
       paymentList.map(async (element) => {
-        const statusList = await this.checkStatus(element.merchantReference);
+        const statusList = await this.checkStatus(element.merchantReference, merchantIdentifier, accessCode, secretKey);
 
         element.status =
           (statusList as any).transaction_status === '14'
@@ -58,10 +64,11 @@ export class PaymentService {
     this.logger.log(`Retrieve all Payments by ${email}`);
 
     const paymentList = await this.paymentRepository.findByEmail(email);
+    const userInfo = await this.userService.findByEmail(email);
 
     await Promise.all(
       paymentList.map(async (element) => {
-        const statusList = await this.checkStatus(element.merchantReference);
+        const statusList = await this.checkStatus(element.merchantReference, userInfo.merchantId, userInfo.accessCode, userInfo.shaRequest);
 
         element.status =
           (statusList as any).transaction_status === '14'
@@ -83,16 +90,12 @@ export class PaymentService {
     return paymentList;
   }
 
-  async generatePaymentLink(body: PaymentDto): Promise<string> {
+  async generatePaymentLink(body: PaymentDto, merchantId: string, accessCode: string, secretKey: string): Promise<string> {
     try {
-      const merchantIdentifier = process.env.PF_MERCHANT_IDENTIFIER;
-      const accessCode = process.env.PF_ACCESS_CODE;
-      const secretKey = process.env.PF_SHA_REQUEST_PHRASE;
-
       const data = {
         command: body.command,
         access_code: accessCode,
-        merchant_identifier: merchantIdentifier,
+        merchant_identifier: merchantId,
         merchant_reference: body.merchantReference,
         amount: body.amount,
         currency: body.currency,
@@ -122,16 +125,14 @@ export class PaymentService {
     }
   }
 
-  async checkStatus(merchantReference: string): Promise<object> {
+  async checkStatus(merchantReference: string, merchantId: string, accessCode: string, secretKey: string): Promise<object> {
     try {
-      const merchantIdentifier = process.env.PF_MERCHANT_IDENTIFIER;
-      const accessCode = process.env.PF_ACCESS_CODE;
-      const secretKey = process.env.PF_SHA_REQUEST_PHRASE;
+      
 
       const data = {
         query_command: 'CHECK_STATUS',
         access_code: accessCode,
-        merchant_identifier: merchantIdentifier,
+        merchant_identifier: merchantId,
         merchant_reference: merchantReference,
         language: 'en',
       };
@@ -154,16 +155,14 @@ export class PaymentService {
     }
   }
 
-  async createInvoice(body: InvoiceDto): Promise<string> {
-    try {
-      const merchantIdentifier = process.env.PF_MERCHANT_IDENTIFIER;
-      const accessCode = process.env.PF_ACCESS_CODE;
-      const secretKey = process.env.PF_SHA_REQUEST_PHRASE;
+  async createInvoice(body: InvoiceDto, merchantId: string, accessCode: string, secretKey: string): Promise<string> {
+    const returnUrl = process.env.PF_REDIRECT_URL;
 
+    try {
       const data = {
         service_command: body.serviceCommand,
         access_code: accessCode,
-        merchant_identifier: merchantIdentifier,
+        merchant_identifier: merchantId,
         merchant_reference: body.merchantReference,
         amount: body.amount * 100,
         currency: body.currency,
@@ -175,7 +174,7 @@ export class PaymentService {
         request_expiry_date: body.expiryDate,
         payment_link_id: body.invoiceNo,
         notification_type: body.notification,
-        return_url: process.env.PF_REDIRECT_URL,
+        return_url: returnUrl,
       };
 
       const signature = await this.generateSignature(data, secretKey);

@@ -127,6 +127,14 @@ export class PaymentDto {
   @IsString()
   @MaxLength(400)
   returnUrl: string;
+
+  @ApiProperty({
+    example: '1',
+    required: true,
+    description: 'User ID',
+  })
+  @IsNumber()
+  userid: number;
 }
 
 export class InvoiceDto {
@@ -260,15 +268,15 @@ export class InvoiceDto {
   // @MaxLength(19)
   phone: string;
 
-  @ApiProperty({
-    example: 'https://dashboard.onnpay.com/dashboard/transaction',
-    required: false,
-    maximum: 400,
-    description: 'Return Url',
-  })
-  @IsString()
-  @MaxLength(400)
-  returnUrl: string;
+  // @ApiProperty({
+  //   example: 'https://dashboard.onnpay.com/dashboard/transaction',
+  //   required: false,
+  //   maximum: 400,
+  //   description: 'Return Url',
+  // })
+  // @IsString()
+  // @MaxLength(400)
+  // returnUrl: string;
 
   @ApiProperty({
     example: 'adam@onnpay.com',
@@ -279,6 +287,14 @@ export class InvoiceDto {
   @IsString()
   @MaxLength(255)
   createdBy: string;
+
+  @ApiProperty({
+    example: '1',
+    required: true,
+    description: 'User ID',
+  })
+  @IsNumber()
+  userid: number;
 }
 
 export class CheckStatusDto {

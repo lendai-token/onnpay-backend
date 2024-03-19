@@ -36,7 +36,9 @@ export class PaymentController {
   //   @ApiResponse(ApiResponseHelper.validationError(`Validation failed`))
   @Post('create_payment')
   async get_payment_link(@Body() body: PaymentDto): Promise<string> {
-    return this.paymentService.generatePaymentLink(body);
+    const userInfo = await this.userService.findOne(body.userid);
+
+    return this.paymentService.generatePaymentLink(body, userInfo.merchantId, userInfo.accessCode, userInfo.shaRequest);
   }
 
   @ApiOperation({ description: `Create invoice` })
@@ -45,8 +47,10 @@ export class PaymentController {
     @Body() body: InvoiceDto,
     @Headers('x-api-key') apiKey: string,
   ): Promise<string> {
+    const userInfo = await this.userService.findOne(body.userid);
+
     if (apiKey === process.env.DEFAULT_API_KEY) {
-      return this.paymentService.createInvoice(body);
+      return this.paymentService.createInvoice(body, userInfo.merchantId, userInfo.accessCode, userInfo.shaRequest);
     }
 
     const isValidApiKey = await this.userService.validateApiKey(apiKey);
@@ -55,7 +59,7 @@ export class PaymentController {
       throw new UnauthorizedException('Invalid API Key');
     }
 
-    return this.paymentService.createInvoice(body);
+    return this.paymentService.createInvoice(body, userInfo.merchantId, userInfo.accessCode, userInfo.shaRequest);
   }
 
   @Get()
